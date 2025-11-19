@@ -1,1 +1,12 @@
-/workspaces/comp3607-jeopardy-group-project/comp3607-jeopardy-group-project/src/main/java/com/jeopardy/App.java
+/workspaces/comp3607-jeopardy-group-project/src/main/java/com/jeopardy/service/StandardScoringStrategy.java
+/workspaces/comp3607-jeopardy-group-project/src/main/java/com/jeopardy/model/Category.java
+/workspaces/comp3607-jeopardy-group-project/src/main/java/com/jeopardy/service/Game.java
+/workspaces/comp3607-jeopardy-group-project/src/main/java/com/jeopardy/model/Question.java
+/workspaces/comp3607-jeopardy-group-project/src/main/java/com/jeopardy/model/Player.java
+/workspaces/comp3607-jeopardy-group-project/src/main/java/com/jeopardy/service/GameController.java
+/workspaces/comp3607-jeopardy-group-project/src/main/java/com/jeopardy/service/ScoringStrategy.java
+/workspaces/comp3607-jeopardy-group-project/src/main/java/com/jeopardy/model/GameData.java
+/workspaces/comp3607-jeopardy-group-project/src/main/java/com/jeopardy/model/GameEvent.java
+/workspaces/comp3607-jeopardy-group-project/src/main/java/com/jeopardy/model/GameState.java
+/workspaces/comp3607-jeopardy-group-project/src/main/java/com/jeopardy/App.java
+/workspaces/comp3607-jeopardy-group-project/src/main/java/com/jeopardy/service/ScoreManager.java

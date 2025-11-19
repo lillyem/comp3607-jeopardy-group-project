@@ -11,6 +11,9 @@ public class Player{
         this.score = 0;  
     }
 
+    public String getName(){
+        return this.name;
+    }
     public String getPlayerId(){
         return this.playerId;
     }
