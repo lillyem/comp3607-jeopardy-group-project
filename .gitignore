@@ -1,1 +1,7 @@
 target/
+*.class
+*.log
+*.csv
+*.xml
+*.json
+*.txt
