@@ -8,6 +8,10 @@ import com.jeopardy.model.GameData;
 import com.jeopardy.model.GameState;
 import com.jeopardy.model.Player;
 import com.jeopardy.model.Question;
+import com.jeopardy.model.GameEvent;
+import java.time.Instant;
+import java.io.IOException;
+import java.nio.file.Path;   // used later for report generation
 
 /**
  * Main controller that orchestrates the entire game flow
@@ -16,12 +20,27 @@ public class GameController {
     private Game game;
     private ScoreManager scoreManager;
     private GameData gameData;
+
+    private GameEventLogger eventLogger;
+    private SummaryReportGenerator reportGenerator;
     
-    public GameController() {
+    // public GameController() {
+    //     this.game = new Game();
+    //     this.scoreManager = new ScoreManager();
+    // }
+
+        public GameController() {
+        this(new TextSummaryReportGenerator(), new CsvGameEventLogger());
+    }
+
+    public GameController(SummaryReportGenerator reportGenerator,
+                          GameEventLogger eventLogger) {
         this.game = new Game();
         this.scoreManager = new ScoreManager();
+        this.reportGenerator = reportGenerator;
+        this.eventLogger = eventLogger;
     }
-    
+
     /**
      * Initialize the game with players and data
      */
@@ -44,6 +63,9 @@ public class GameController {
         
         // Start the game
         game.startGame();
+
+        // Log game start
+        logEvent("GAME_STARTED", null, null, null, null, null);
     }
     
     /**
@@ -75,6 +97,16 @@ public class GameController {
         
         // Mark question as answered
         question.setAnswered(true);
+
+        // Log the question result
+        logEvent(
+                "QUESTION_ANSWERED",
+                currentPlayer,
+                categoryName,
+                questionValue,
+                playerAnswer,
+                isCorrect ? "CORRECT" : "INCORRECT"
+        );
         
         // Move to next turn
         game.nextTurn();
@@ -86,9 +118,14 @@ public class GameController {
      * Check if game should end and end it if conditions are met
      */
     public boolean checkAndEndGame() {
+    
+        // Log game finish
+        logEvent("GAME_FINISHED", null, null, null, null, null);
+
         if (!game.hasAvailableQuestions() || game.allQuestionsAnswered()) {
             game.endGame();
             return true;
+
         }
         return false;
     }
@@ -146,4 +183,40 @@ public class GameController {
             scoreManager.getScoringStrategyName()
         );
     }
+
+    private void logEvent(String activity,
+                      Player player,
+                      String category,
+                      Integer questionValue,
+                      String answerGiven,
+                      String result) {
+
+        if (eventLogger == null) {
+            return;
+        }
+
+        GameEvent event = new GameEvent.Builder(
+                game.getGameId(),          // caseId
+                activity                   // activity
+        )
+                .playerId(player != null ? player.getPlayerId() : null)
+                .timestamp(Instant.now())
+                .category(category)
+                .questionValue(questionValue)
+                .answerGiven(answerGiven)
+                .result(result)
+                .scoreAfterPlay(player != null ? player.getScore() : null)
+                .build();
+
+        eventLogger.logEvent(event);
+    }
+
+
+    public Path generateSummaryReport() throws IOException {
+        if (reportGenerator == null) {
+            throw new IllegalStateException("No report generator configured.");
+        }
+        return reportGenerator.generate(this);
+    }
+
 }

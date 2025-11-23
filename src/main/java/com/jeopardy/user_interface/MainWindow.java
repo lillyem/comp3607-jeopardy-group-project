@@ -357,5 +357,19 @@ public class MainWindow extends JFrame {
                 btn.setEnabled(false);
             }
         }
+
+        // Generate summary report
+        try {
+            java.nio.file.Path reportPath = controller.generateSummaryReport();
+            JOptionPane.showMessageDialog(this,
+                    "Summary report generated at:\n" + reportPath.toAbsolutePath(),
+                    "Summary Report",
+                    JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Could not generate summary report: " + ex.getMessage(),
+                    "Report Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
     }
 }
