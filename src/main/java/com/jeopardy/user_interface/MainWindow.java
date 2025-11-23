@@ -10,6 +10,8 @@ import com.jeopardy.service.GameDataLoader;
 import com.jeopardy.service.GameDataLoaderFactory;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -27,36 +29,41 @@ public class MainWindow extends JFrame {
 
     // UI components
     private final JPanel boardPanel;
-    private final JTextArea scoreArea;
+    private final JPanel scorePanel;
     private final JLabel statusLabel;
     private final JButton startGameButton;
+    private final JButton endGameButton;
+    private final JButton loadButton;
     private final JSpinner playerCountSpinner;
     private final List<JTextField> playerNameFields;
+
+    private boolean gameInProgress = false;
 
     public MainWindow() {
         super("COMP3607 Jeopardy Game");
 
         this.controller = new GameController();
-        this.playerNameFields = new ArrayList<>();
+        this.playerNameFields = new ArrayList<JTextField>();
 
         // Basic window settings
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1000, 700);
+        setSize(1050, 720);
         setLocationRelativeTo(null);
-        setLayout(new BorderLayout());
+        setLayout(new BorderLayout(10, 10));
 
-        // === Top panel: file load + player setup + start button ===
-        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        // ===== TOP: controls =====
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
 
-        JButton loadButton = new JButton("Load Questions (CSV/JSON/XML)");
-        startGameButton = new JButton("Start Game");
-        startGameButton.setEnabled(false);
+        JPanel leftControls = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        loadButton = new JButton("Load Questions (CSV/JSON/XML)");
+        leftControls.add(loadButton);
 
-        topPanel.add(loadButton);
-
-        topPanel.add(new JLabel("Players:"));
+        leftControls.add(new JLabel("Players:"));
         playerCountSpinner = new JSpinner(new SpinnerNumberModel(2, 1, 4, 1));
-        topPanel.add(playerCountSpinner);
+        leftControls.add(playerCountSpinner);
+
+        topPanel.add(leftControls, BorderLayout.WEST);
 
         // Player name fields
         JPanel namesPanel = new JPanel(new GridLayout(1, 4, 5, 5));
@@ -66,48 +73,84 @@ public class MainWindow extends JFrame {
             namesPanel.add(tf);
             playerNameFields.add(tf);
         }
+        topPanel.add(namesPanel, BorderLayout.CENTER);
 
-        topPanel.add(namesPanel);
-        topPanel.add(startGameButton);
+        // Start / End game
+        JPanel rightControls = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5));
+        startGameButton = new JButton("Start Game");
+        startGameButton.setEnabled(false);
+        endGameButton = new JButton("End Game");
+        endGameButton.setEnabled(false);
+        rightControls.add(startGameButton);
+        rightControls.add(endGameButton);
+
+        topPanel.add(rightControls, BorderLayout.EAST);
 
         add(topPanel, BorderLayout.NORTH);
 
-        // === Center panel: Jeopardy board (categories × values) ===
+        // ===== CENTER: board =====
         boardPanel = new JPanel();
         boardPanel.setLayout(new GridLayout(1, 1));
         boardPanel.add(new JLabel("Load questions and start the game to see the board.",
                 SwingConstants.CENTER));
         add(boardPanel, BorderLayout.CENTER);
 
-        // === Right panel: scores ===
+        // ===== RIGHT: pretty score panel =====
         JPanel rightPanel = new JPanel(new BorderLayout());
-        rightPanel.setPreferredSize(new Dimension(250, 0));
-        rightPanel.add(new JLabel("Scores", SwingConstants.CENTER), BorderLayout.NORTH);
+        rightPanel.setPreferredSize(new Dimension(260, 0));
+        rightPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
-        scoreArea = new JTextArea();
-        scoreArea.setEditable(false);
-        rightPanel.add(new JScrollPane(scoreArea), BorderLayout.CENTER);
+        JLabel scoreTitle = new JLabel("Scores", SwingConstants.CENTER);
+        scoreTitle.setFont(scoreTitle.getFont().deriveFont(Font.BOLD, 18f));
+        rightPanel.add(scoreTitle, BorderLayout.NORTH);
+
+        scorePanel = new JPanel();
+        scorePanel.setLayout(new BoxLayout(scorePanel, BoxLayout.Y_AXIS));
+        scorePanel.setBorder(new EmptyBorder(10, 0, 0, 0));
+        JScrollPane scoreScroll = new JScrollPane(scorePanel);
+        scoreScroll.setBorder(null);
+        rightPanel.add(scoreScroll, BorderLayout.CENTER);
 
         add(rightPanel, BorderLayout.EAST);
 
-        // === Bottom: status bar ===
+        // ===== BOTTOM: status bar =====
         statusLabel = new JLabel("Welcome! Load a question file to begin.");
+        statusLabel.setBorder(new EmptyBorder(5, 10, 5, 10));
         add(statusLabel, BorderLayout.SOUTH);
 
-        // Wire up button actions
-        loadButton.addActionListener(e -> onLoadQuestions());
-        startGameButton.addActionListener(e -> onStartGame());
+        // Wire up actions
+        wireActions();
 
-        // Ensure UI reflects initial state
+        // Initial scores
         refreshScores();
     }
 
+    private void wireActions() {
+        // File chooser filter – only CSV/JSON/XML
+        loadButton.addActionListener(e -> onLoadQuestions());
+
+        startGameButton.addActionListener(e -> onStartGame());
+
+        endGameButton.addActionListener(e -> onEndGame());
+    }
+
     // =============================
-    //  File loading & game start
+    //  File loading & game setup
     // =============================
 
     private void onLoadQuestions() {
+        if (gameInProgress) {
+            JOptionPane.showMessageDialog(this,
+                    "Cannot load new questions while a game is in progress.",
+                    "Game In Progress",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
         JFileChooser chooser = new JFileChooser();
+        chooser.setFileFilter(new FileNameExtensionFilter(
+                "Jeopardy Data Files (CSV, JSON, XML)", "csv", "json", "xml"));
+
         int result = chooser.showOpenDialog(this);
         if (result != JFileChooser.APPROVE_OPTION) {
             return;
@@ -129,13 +172,13 @@ public class MainWindow extends JFrame {
 
         } catch (IllegalArgumentException ex) {
             JOptionPane.showMessageDialog(this,
-                    "Unsupported file type: " + ex.getMessage(),
+                    "Error loading questions: " + ex.getMessage(),
                     "Error",
                     JOptionPane.ERROR_MESSAGE);
-            statusLabel.setText("Error: unsupported file type.");
+            statusLabel.setText("Error loading questions. Check file format and data.");
         } catch (IOException ex) {
             JOptionPane.showMessageDialog(this,
-                    "Error loading file: " + ex.getMessage(),
+                    "Error reading file: " + ex.getMessage(),
                     "Error",
                     JOptionPane.ERROR_MESSAGE);
             statusLabel.setText("Error loading questions. Try again.");
@@ -151,8 +194,8 @@ public class MainWindow extends JFrame {
             return;
         }
 
-        int playerCount = (int) playerCountSpinner.getValue();
-        List<String> names = new ArrayList<>();
+        int playerCount = ((Integer) playerCountSpinner.getValue()).intValue();
+        List<String> names = new ArrayList<String>();
 
         for (int i = 0; i < playerCount; i++) {
             String name = playerNameFields.get(i).getText().trim();
@@ -164,18 +207,36 @@ public class MainWindow extends JFrame {
 
         try {
             controller.initializeGame(names, loadedGameData);
+            gameInProgress = true;
+
             buildBoard();
             refreshScores();
             statusLabel.setText("Game started. Current player: " +
-                    controller.getCurrentPlayer().getPlayerId());
-            // Prevent re-starting mid-game
+                    controller.getCurrentPlayer().getName());
+
+            // Lock in config while playing
             startGameButton.setEnabled(false);
+            loadButton.setEnabled(false);
+            endGameButton.setEnabled(true);
+            playerCountSpinner.setEnabled(false);
+            for (JTextField tf : playerNameFields) {
+                tf.setEnabled(false);
+            }
+
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this,
                     "Error starting game: " + ex.getMessage(),
                     "Error",
                     JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    private void onEndGame() {
+        if (!gameInProgress) {
+            return;
+        }
+        controller.getGame().endGame();
+        onGameFinished();
     }
 
     // =============================
@@ -193,12 +254,14 @@ public class MainWindow extends JFrame {
             return;
         }
 
-        // Determine distinct question values across all categories (e.g., 100,200,...)
-        Set<Integer> valueSet = new TreeSet<>();
+        // Determine distinct question values across all categories (e.g., 100, 200,…)
+        Set<Integer> valueSet = new TreeSet<Integer>();
         for (Category cat : categories) {
-            cat.getAllQuestions().forEach(q -> valueSet.add(q.getValue()));
+            for (Question q : cat.getAllQuestions()) {
+                valueSet.add(Integer.valueOf(q.getValue()));
+            }
         }
-        List<Integer> values = new ArrayList<>(valueSet);
+        List<Integer> values = new ArrayList<Integer>(valueSet);
 
         int rows = values.size() + 1; // +1 for header row
         int cols = categories.size();
@@ -208,19 +271,23 @@ public class MainWindow extends JFrame {
         // Header row: category names
         for (Category cat : categories) {
             JLabel label = new JLabel(cat.getName(), SwingConstants.CENTER);
-            label.setFont(label.getFont().deriveFont(Font.BOLD));
+            label.setFont(label.getFont().deriveFont(Font.BOLD, 14f));
+            label.setOpaque(true);
+            label.setBackground(new Color(30, 60, 120));
+            label.setForeground(Color.WHITE);
             boardPanel.add(label);
         }
 
         // Value rows: one button per (category, value)
-        for (int val : values) {
+        for (int i = 0; i < values.size(); i++) {
+            int val = values.get(i).intValue();
             for (Category cat : categories) {
                 if (cat.hasQuestion(val)) {
                     JButton btn = new JButton(String.valueOf(val));
+                    btn.setFont(btn.getFont().deriveFont(Font.BOLD, 14f));
                     btn.addActionListener(e -> onQuestionClicked(cat.getName(), val, btn));
                     boardPanel.add(btn);
                 } else {
-                    // Empty cell if category does not have this value
                     boardPanel.add(new JLabel("", SwingConstants.CENTER));
                 }
             }
@@ -307,7 +374,7 @@ public class MainWindow extends JFrame {
             onGameFinished();
         } else {
             statusLabel.setText("Next player: " +
-                    controller.getCurrentPlayer().getPlayerId());
+                    controller.getCurrentPlayer().getName());
         }
     }
 
@@ -316,28 +383,57 @@ public class MainWindow extends JFrame {
     // =============================
 
     private void refreshScores() {
-        StringBuilder sb = new StringBuilder();
+        scorePanel.removeAll();
+
         List<Player> players = controller.getPlayers();
         if (players.isEmpty()) {
-            sb.append("No players yet.\n");
+            JLabel noPlayers = new JLabel("No players yet.", SwingConstants.CENTER);
+            scorePanel.add(noPlayers);
         } else {
             for (Player p : players) {
-                sb.append(p.getPlayerId())
-                        .append(" (")
-                        .append(p.toString())
-                        .append(")")
-                        .append("\n");
+                scorePanel.add(createPlayerScoreCard(p));
+                scorePanel.add(Box.createVerticalStrut(8));
             }
         }
-        scoreArea.setText(sb.toString());
+
+        scorePanel.revalidate();
+        scorePanel.repaint();
+    }
+
+    // Pretty "card" for each player
+    private JComponent createPlayerScoreCard(Player player) {
+        JPanel card = new JPanel(new BorderLayout());
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(180, 180, 200), 1),
+                new EmptyBorder(8, 8, 8, 8)
+        ));
+        card.setBackground(new Color(245, 247, 252));
+
+        JLabel nameLabel = new JLabel(player.getName());
+        nameLabel.setFont(nameLabel.getFont().deriveFont(Font.BOLD, 14f));
+
+        JLabel scoreLabel = new JLabel(String.valueOf(player.getScore()));
+        scoreLabel.setFont(scoreLabel.getFont().deriveFont(Font.BOLD, 20f));
+        scoreLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+
+        card.add(nameLabel, BorderLayout.WEST);
+        card.add(scoreLabel, BorderLayout.EAST);
+
+        return card;
     }
 
     private void onGameFinished() {
+        if (!gameInProgress) {
+            return;
+        }
+
+        gameInProgress = false;
+
         Player winner = controller.getWinner();
         String message;
         if (winner != null) {
             message = String.format("Game over! Winner: %s with %d points.",
-                    winner.getPlayerId(), winner.getScore());
+                    winner.getName(), winner.getScore());
         } else {
             message = "Game over! No winner determined.";
         }
@@ -351,25 +447,20 @@ public class MainWindow extends JFrame {
 
         // Disable all question buttons
         Component[] components = boardPanel.getComponents();
-        for (Component c : components) {
-            if (c instanceof JButton ) {
+        for (int i = 0; i < components.length; i++) {
+            Component c = components[i];
+            if (c instanceof JButton) {
                 JButton btn = (JButton) c;
                 btn.setEnabled(false);
             }
         }
 
-        // Generate summary report
-        try {
-            java.nio.file.Path reportPath = controller.generateSummaryReport();
-            JOptionPane.showMessageDialog(this,
-                    "Summary report generated at:\n" + reportPath.toAbsolutePath(),
-                    "Summary Report",
-                    JOptionPane.INFORMATION_MESSAGE);
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this,
-                    "Could not generate summary report: " + ex.getMessage(),
-                    "Report Error",
-                    JOptionPane.ERROR_MESSAGE);
+        // Unlock config so a new game can be started after re-loading questions
+        endGameButton.setEnabled(false);
+        loadButton.setEnabled(true);
+        playerCountSpinner.setEnabled(true);
+        for (JTextField tf : playerNameFields) {
+            tf.setEnabled(true);
         }
     }
 }
