@@ -1,5 +1,6 @@
 package com.jeopardy.service;
 
+import com.jeopardy.model.Category;
 import com.jeopardy.model.GameData;
 import com.jeopardy.model.Question;
 
@@ -8,145 +9,129 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Loads Jeopardy game data from an XML file.
+ * Loads Jeopardy questions from an XML file.
+ * Expected structure:
  *
- * Expected format:
- *
- * <Questions>
- *     <Question>
- *         <Category>Science</Category>
- *         <Value>100</Value>
- *         <QuestionText>What is H2O?</QuestionText>
- *
- *         <Options>
- *             <OptionA>Hydrogen</OptionA>
- *             <OptionB>Oxygen</OptionB>
- *             <OptionC>Water</OptionC>
- *             <OptionD>Helium</OptionD>
- *         </Options>
- *
- *         <CorrectAnswer>C</CorrectAnswer>
- *     </Question>
- * </Questions>
+ * <JeopardyQuestions>
+ *   <QuestionItem>
+ *     <Category>...</Category>
+ *     <Value>100</Value>
+ *     <QuestionText>...</QuestionText>
+ *     <Options>
+ *       <OptionA>...</OptionA>
+ *       <OptionB>...</OptionB>
+ *       <OptionC>...</OptionC>
+ *       <OptionD>...</OptionD>
+ *     </Options>
+ *     <CorrectAnswer>A</CorrectAnswer>
+ *   </QuestionItem>
+ *   ...
+ * </JeopardyQuestions>
  */
 public class XmlGameDataLoader implements GameDataLoader {
 
     @Override
-    public GameData load(Path filePath) throws IOException {
-
-        if (filePath == null) {
-            throw new IllegalArgumentException("XML file path cannot be null.");
-        }
-
-        if (!Files.exists(filePath)) {
-            throw new IOException("XML file does not exist: " + filePath);
-        }
+    public GameData load(Path path) throws IOException {
+        GameData gameData = new GameData();
 
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            Document doc = builder.parse(filePath.toFile());
+            factory.setIgnoringComments(true);
+            factory.setIgnoringElementContentWhitespace(true);
 
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(path.toFile());
             doc.getDocumentElement().normalize();
 
-            NodeList questionNodes = doc.getElementsByTagName("Question");
-
-            if (questionNodes == null || questionNodes.getLength() == 0) {
-                throw new IOException("No <Question> entries found in XML file.");
-            }
-
-            GameData gameData = new GameData();
-
+            NodeList questionNodes = doc.getElementsByTagName("QuestionItem");
             for (int i = 0; i < questionNodes.getLength(); i++) {
                 Node node = questionNodes.item(i);
-
-                if (node.getNodeType() != Node.ELEMENT_NODE) continue;
-
-                Element elem = (Element) node;
-
-                // -------- Extract Required Fields --------
-                String category = getRequiredText(elem, "Category", i);
-                int value = getRequiredInt(elem, "Value", i);
-                String questionText = getRequiredText(elem, "QuestionText", i);
-                String correctAnswer = getRequiredText(elem, "CorrectAnswer", i).toUpperCase();
-
-                if (!"ABCD".contains(correctAnswer)) {
-                    throw new IOException("Invalid <CorrectAnswer> '" + correctAnswer
-                            + "' in question index " + i + ". Must be A, B, C, or D.");
+                if (node.getNodeType() != Node.ELEMENT_NODE) {
+                    continue;
                 }
 
-                // -------- Extract Options --------
-                Element optionsElem = getRequiredElement(elem, "Options", i);
+                Element qElement = (Element) node;
 
-                Map<String, String> options = new HashMap<>();
-                options.put("A", getRequiredText(optionsElem, "OptionA", i));
-                options.put("B", getRequiredText(optionsElem, "OptionB", i));
-                options.put("C", getRequiredText(optionsElem, "OptionC", i));
-                options.put("D", getRequiredText(optionsElem, "OptionD", i));
+                String categoryName = getTagText(qElement, "Category");
+                String valueText = getTagText(qElement, "Value");
+                String questionText = getTagText(qElement, "QuestionText");
+                if (questionText == null) {
+                    // Fallback if XML used <Question> instead
+                    questionText = getTagText(qElement, "Question");
+                }
 
-                // -------- Create Question Object --------
-                Question q = new Question(
-                        category,
+                if (categoryName == null || valueText == null || questionText == null) {
+                    throw new IOException("Missing required fields in QuestionItem at index " + i);
+                }
+
+                int value;
+                try {
+                    value = Integer.parseInt(valueText.trim());
+                } catch (NumberFormatException e) {
+                    throw new IOException("Invalid value '" + valueText + "' in QuestionItem for category " +
+                            categoryName, e);
+                }
+
+                // Read options
+                Element optionsElement = (Element) qElement.getElementsByTagName("Options").item(0);
+                if (optionsElement == null) {
+                    throw new IOException("Missing <Options> element for question: " + questionText);
+                }
+
+                String optionA = getTagText(optionsElement, "OptionA");
+                String optionB = getTagText(optionsElement, "OptionB");
+                String optionC = getTagText(optionsElement, "OptionC");
+                String optionD = getTagText(optionsElement, "OptionD");
+
+                Map<String, String> options = new HashMap<String, String>();
+                options.put("A", optionA);
+                options.put("B", optionB);
+                options.put("C", optionC);
+                options.put("D", optionD);
+
+                String correctAnswer = getTagText(qElement, "CorrectAnswer");
+                if (correctAnswer == null) {
+                    throw new IOException("Missing <CorrectAnswer> for question: " + questionText);
+                }
+
+                Question question = new Question(
+                        categoryName,
                         value,
                         questionText,
                         options,
-                        correctAnswer
+                        correctAnswer.trim().toUpperCase()
                 );
 
-                gameData.addQuestion(q);
+                // Attach to GameData via Category
+                Category category = gameData.getCategory(categoryName);
+                if (category == null) {
+                    category = new Category(categoryName);
+                    gameData.addCategory(category);
+                }
+                category.addQuestion(question);
             }
-
-            // -------- FINAL VALIDATION --------
-            DataValidator.validateCategories(gameData.getCategories());
 
             return gameData;
 
-        } catch (IOException ex) {
-            throw ex;  // preserve clean IO errors
         } catch (Exception e) {
-            throw new IOException("Failed to load XML questions: " + e.getMessage(), e);
+            throw new IOException("Error parsing XML file: " + e.getMessage(), e);
         }
     }
 
-    // ============= Helper Validation Methods =============
-
-    private String getRequiredText(Element parent, String tag, int index) throws IOException {
-        NodeList list = parent.getElementsByTagName(tag);
-        if (list == null || list.getLength() == 0) {
-            throw new IOException("Missing <" + tag + "> in question index " + index);
+    private String getTagText(Element parent, String tagName) {
+        NodeList list = parent.getElementsByTagName(tagName);
+        if (list.getLength() == 0) {
+            return null;
         }
-        String text = list.item(0).getTextContent().trim();
-        if (text.isEmpty()) {
-            throw new IOException("Empty <" + tag + "> in question index " + index);
+        Node node = list.item(0);
+        if (node == null) {
+            return null;
         }
-        return text;
-    }
-
-    private int getRequiredInt(Element parent, String tag, int index) throws IOException {
-        String text = getRequiredText(parent, tag, index);
-        try {
-            return Integer.parseInt(text);
-        } catch (NumberFormatException e) {
-            throw new IOException("Invalid numeric value for <" + tag + "> in question index "
-                    + index + ": '" + text + "'");
-        }
-    }
-
-    private Element getRequiredElement(Element parent, String tag, int index) throws IOException {
-        NodeList list = parent.getElementsByTagName(tag);
-        if (list == null || list.getLength() == 0) {
-            throw new IOException("Missing <" + tag + "> element in question index " + index);
-        }
-        Node n = list.item(0);
-        if (n.getNodeType() != Node.ELEMENT_NODE) {
-            throw new IOException("<" + tag + "> is not a valid element in question index " + index);
-        }
-        return (Element) n;
+        return node.getTextContent() != null ? node.getTextContent().trim() : null;
     }
 }

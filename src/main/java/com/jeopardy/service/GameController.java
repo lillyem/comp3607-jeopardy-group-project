@@ -52,6 +52,9 @@ public class GameController {
             throw new IllegalArgumentException("Game data cannot be null or empty");
         }
         
+        this.game = new Game();
+        this.scoreManager = new ScoreManager();
+        
         // Add players
         for (String name : playerNames) {
             game.addPlayer(name.trim());

@@ -3,15 +3,13 @@ package com.jeopardy.model;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Represents a Jeopardy question with multiple choice options
- */
+
 public class Question {
     private String category;
     private int value;
     private String questionText;
-    private Map<String, String> options; // A, B, C, D
-    private String correctAnswer; // A, B, C, or D
+    private Map<String, String> options;
+    private String correctAnswer;
     private boolean isAnswered;
     
     public Question(String category, int value, String questionText, 
@@ -19,8 +17,8 @@ public class Question {
         this.category = category;
         this.value = value;
         this.questionText = questionText;
-        this.options = new HashMap<>(options); // Defensive copy
-        this.correctAnswer = correctAnswer.toUpperCase(); // Ensure uppercase
+        this.options = new HashMap<>(options); 
+        this.correctAnswer = correctAnswer.toUpperCase(); 
         this.isAnswered = false;
         
         validateQuestion();
@@ -39,7 +37,7 @@ public class Question {
         }
     }
     
-    // Getters
+    
     public String getCategory() { 
         return category; 
     }
@@ -53,7 +51,7 @@ public class Question {
     }
     
     public Map<String, String> getOptions() { 
-        return new HashMap<>(options); // Return defensive copy
+        return new HashMap<>(options); 
     }
     
     public String getCorrectAnswer() { 
@@ -64,12 +62,12 @@ public class Question {
         return isAnswered; 
     }
     
-    // Setters
+    
     public void setAnswered(boolean answered) { 
         this.isAnswered = answered; 
     }
     
-    // Business methods
+    
     public boolean isCorrect(String userAnswer) {
         if (userAnswer == null) return false;
         return correctAnswer.equalsIgnoreCase(userAnswer.trim());

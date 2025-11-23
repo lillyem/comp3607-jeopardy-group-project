@@ -2,9 +2,7 @@ package com.jeopardy.model;
 
 import java.time.Instant;
 
-/**
- * Represents an event for process mining logging
- */
+
 public class GameEvent {
     private String caseId;
     private String playerId;
@@ -16,7 +14,6 @@ public class GameEvent {
     private String result;
     private Integer scoreAfterPlay;
     
-    // Private constructor for builder pattern
     private GameEvent(Builder builder) {
         this.caseId = builder.caseId;
         this.playerId = builder.playerId;
@@ -29,7 +26,6 @@ public class GameEvent {
         this.scoreAfterPlay = builder.scoreAfterPlay;
     }
     
-    // Getters
     public String getCaseId() { return caseId; }
     public String getPlayerId() { return playerId; }
     public String getActivity() { return activity; }
@@ -40,7 +36,6 @@ public class GameEvent {
     public String getResult() { return result; }
     public Integer getScoreAfterPlay() { return scoreAfterPlay; }
     
-    // Builder pattern for easy event creation
     public static class Builder {
         private String caseId;
         private String playerId;

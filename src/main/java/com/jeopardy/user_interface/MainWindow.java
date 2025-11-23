@@ -24,7 +24,7 @@ import java.util.List;
 public class MainWindow extends JFrame {
 
     // Core game objects
-    private final GameController controller;
+    private GameController controller;
     private GameData loadedGameData;
 
     // UI components
@@ -34,6 +34,7 @@ public class MainWindow extends JFrame {
     private final JButton startGameButton;
     private final JButton endGameButton;
     private final JButton loadButton;
+    private JButton newGameButton;
     private final JSpinner playerCountSpinner;
     private final List<JTextField> playerNameFields;
 
@@ -75,14 +76,17 @@ public class MainWindow extends JFrame {
         }
         topPanel.add(namesPanel, BorderLayout.CENTER);
 
-        // Start / End game
+        // Start / End / New game
         JPanel rightControls = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5));
         startGameButton = new JButton("Start Game");
         startGameButton.setEnabled(false);
         endGameButton = new JButton("End Game");
         endGameButton.setEnabled(false);
+        newGameButton = new JButton("New Game");    // <-- use field, not local
+        newGameButton.setEnabled(false);
         rightControls.add(startGameButton);
         rightControls.add(endGameButton);
+        rightControls.add(newGameButton);
 
         topPanel.add(rightControls, BorderLayout.EAST);
 
@@ -126,12 +130,10 @@ public class MainWindow extends JFrame {
     }
 
     private void wireActions() {
-        // File chooser filter – only CSV/JSON/XML
         loadButton.addActionListener(e -> onLoadQuestions());
-
         startGameButton.addActionListener(e -> onStartGame());
-
         endGameButton.addActionListener(e -> onEndGame());
+        newGameButton.addActionListener(e -> resetGame());
     }
 
     // =============================
@@ -200,10 +202,19 @@ public class MainWindow extends JFrame {
         for (int i = 0; i < playerCount; i++) {
             String name = playerNameFields.get(i).getText().trim();
             if (name.isEmpty()) {
-                name = "Player " + (i + 1);
+                JOptionPane.showMessageDialog(
+                        this,
+                        "You selected " + playerCount + " player(s),\n" +
+                        "but one or more of the first " + playerCount + " name fields is empty.\n\n" +
+                        "Please fill in ALL required player names.",
+                        "Missing Player Names",
+                        JOptionPane.ERROR_MESSAGE
+                );
+                return;  
             }
             names.add(name);
         }
+
 
         try {
             controller.initializeGame(names, loadedGameData);
@@ -218,6 +229,7 @@ public class MainWindow extends JFrame {
             startGameButton.setEnabled(false);
             loadButton.setEnabled(false);
             endGameButton.setEnabled(true);
+            newGameButton.setEnabled(false);        // cannot reset mid-game
             playerCountSpinner.setEnabled(false);
             for (JTextField tf : playerNameFields) {
                 tf.setEnabled(false);
@@ -343,7 +355,6 @@ public class MainWindow extends JFrame {
         );
 
         if (answer == null) {
-            // User cancelled
             return;
         }
 
@@ -362,13 +373,9 @@ public class MainWindow extends JFrame {
                     JOptionPane.INFORMATION_MESSAGE);
         }
 
-        // Disable the button for this question
         button.setEnabled(false);
-
-        // Refresh scores and current player info
         refreshScores();
 
-        // Check if game over
         boolean ended = controller.checkAndEndGame();
         if (ended || controller.isGameFinished()) {
             onGameFinished();
@@ -400,7 +407,6 @@ public class MainWindow extends JFrame {
         scorePanel.repaint();
     }
 
-    // Pretty "card" for each player
     private JComponent createPlayerScoreCard(Player player) {
         JPanel card = new JPanel(new BorderLayout());
         card.setBorder(BorderFactory.createCompoundBorder(
@@ -445,7 +451,6 @@ public class MainWindow extends JFrame {
 
         statusLabel.setText("Game finished. " + message);
 
-        // Disable all question buttons
         Component[] components = boardPanel.getComponents();
         for (int i = 0; i < components.length; i++) {
             Component c = components[i];
@@ -455,12 +460,48 @@ public class MainWindow extends JFrame {
             }
         }
 
-        // Unlock config so a new game can be started after re-loading questions
         endGameButton.setEnabled(false);
         loadButton.setEnabled(true);
         playerCountSpinner.setEnabled(true);
         for (JTextField tf : playerNameFields) {
             tf.setEnabled(true);
         }
+        newGameButton.setEnabled(true);   // can now reset
+    }
+
+    private void resetGame() {
+        // New controller so game state (players, questions) is fresh next time
+        this.controller = new GameController();
+        this.gameInProgress = false;
+
+        // Clear board
+        boardPanel.removeAll();
+        boardPanel.add(new JLabel("Load questions and start the game to see the board.",
+                SwingConstants.CENTER));
+
+        // Reset player fields
+        for (JTextField tf : playerNameFields) {
+            tf.setText("");
+            tf.setEnabled(true);
+        }
+
+        // Reset controls
+        startGameButton.setEnabled(loadedGameData != null);
+        endGameButton.setEnabled(false);
+        newGameButton.setEnabled(false);
+        loadButton.setEnabled(true);
+        playerCountSpinner.setEnabled(true);
+
+        // Reset status
+        statusLabel.setText("Game reset. Load questions or start again.");
+
+        // Reset scores panel
+        scorePanel.removeAll();
+        scorePanel.add(new JLabel("No players yet.", SwingConstants.CENTER));
+
+        boardPanel.revalidate();
+        boardPanel.repaint();
+        scorePanel.revalidate();
+        scorePanel.repaint();
     }
 }

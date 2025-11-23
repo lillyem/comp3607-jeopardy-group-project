@@ -4,19 +4,16 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.TreeMap;
 
-/**
- * Represents a category containing multiple questions at different values
- */
 public class Category {
     private String name;
-    private Map<Integer, Question> questions; // Value -> Question
+    private Map<Integer, Question> questions; 
     
     public Category(String name) {
         this.name = name;
-        this.questions = new TreeMap<>(); // Automatically sorts by value
+        this.questions = new TreeMap<>(); 
     }
     
-    // Add a question to this category
+    
     public void addQuestion(Question question) {
         if (!name.equals(question.getCategory())) {
             throw new IllegalArgumentException("Question category must match category name");
@@ -24,13 +21,13 @@ public class Category {
         questions.put(question.getValue(), question);
     }
     
-    // Getters
+    
     public String getName() { 
         return name; 
     }
     
     public Map<Integer, Question> getQuestions() { 
-        return new TreeMap<>(questions); // Return defensive copy
+        return new TreeMap<>(questions); 
     }
     
     public Question getQuestion(int value) { 
@@ -45,7 +42,7 @@ public class Category {
         return questions.values();
     }
     
-    // Business methods
+    
     public boolean allQuestionsAnswered() {
         return questions.values().stream().allMatch(Question::isAnswered);
     }
