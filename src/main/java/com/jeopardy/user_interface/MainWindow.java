@@ -247,7 +247,9 @@ public class MainWindow extends JFrame {
         if (!gameInProgress) {
             return;
         }
-        controller.getGame().endGame();
+
+        // Mark game as finished
+        controller.forceEndGame();
         onGameFinished();
     }
 
@@ -450,6 +452,20 @@ public class MainWindow extends JFrame {
                 JOptionPane.INFORMATION_MESSAGE);
 
         statusLabel.setText("Game finished. " + message);
+
+        // === NEW: Generate summary report when game finishes ===
+        try {
+            Path reportPath = controller.generateSummaryReport();
+            JOptionPane.showMessageDialog(this,
+                    "Summary report generated:\n" + reportPath.toAbsolutePath(),
+                    "Summary Report",
+                    JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Could not generate summary report:\n" + ex.getMessage(),
+                    "Report Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
 
         Component[] components = boardPanel.getComponents();
         for (int i = 0; i < components.length; i++) {
