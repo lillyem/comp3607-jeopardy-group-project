@@ -89,18 +89,23 @@ public class GameController {
     }
     
     public boolean answerQuestion(String categoryName, int value, String answer) {
-        Question question = getQuestion(categoryName, value);
-        if (question != null && !question.isAnswered()) {
-            boolean correct = question.getCorrectAnswer().equals(answer);
-            if (correct) {
-                Player currentPlayer = getCurrentPlayer();
-                currentPlayer.setScore(currentPlayer.getScore() + question.getValue());
-            }
-            question.setAnswered(true);
-            return correct;
+    Question question = getQuestion(categoryName, value);
+    if (question != null && !question.isAnswered()) {
+        boolean correct = question.getCorrectAnswer().equals(answer);
+        Player currentPlayer = getCurrentPlayer();
+        
+        if (correct) {
+            currentPlayer.addPoints(question.getValue());
+        } else {
+            // Deduct points for wrong answer (but not below 0)
+            currentPlayer.subtractPoints(question.getValue());
         }
-        return false;
+        
+        question.setAnswered(true);
+        return correct;
     }
+    return false;
+}
     
     public java.nio.file.Path generateSummaryReport() {
         return java.nio.file.Path.of("report.txt");
@@ -121,4 +126,8 @@ public class GameController {
     public Player getWinner() {
         return gameState.getWinner();
     }
+
+    public void nextPlayer() {
+    gameState.nextPlayer();
+}
 }

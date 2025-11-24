@@ -26,17 +26,17 @@ public class Player{
         if(score >= 0)
             this.score = score;
     }
-    
+
     public void addPoints(int points){
         if(points > 0)
             this.score += points;
     }
 
      public void subtractPoints(int points) {
-        if (points > 0) {
-            this.score = Math.max(0, this.score - points); // Prevent negative scores
-        }
+    if (points > 0) {
+        this.score = Math.max(0, this.score - points); // Prevent negative scores
     }
+}
     
     public void resetScore() {
         this.score = 0;

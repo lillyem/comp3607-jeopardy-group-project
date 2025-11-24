@@ -74,9 +74,10 @@ public class GameState {
     }
     
     public void nextPlayer() {
-        currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
-        currentPlayer = players.get(currentPlayerIndex);
-    }
+    if (players.isEmpty()) return;
+    currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+    currentPlayer = players.get(currentPlayerIndex);
+}
     
     public boolean isGameFinished() {
         return FINISHED.equals(status);

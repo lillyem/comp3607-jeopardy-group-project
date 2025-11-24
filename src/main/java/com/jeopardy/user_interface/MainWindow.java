@@ -346,71 +346,73 @@ public class MainWindow extends JFrame {
     logSystem("Select Question", categoryName, value, null);
 
     Question q = controller.getQuestion(categoryName, value);
-        if (q == null) {
-            JOptionPane.showMessageDialog(this,
-                    "Question not found.",
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-        if (q.isAnswered()) {
-            JOptionPane.showMessageDialog(this,
-                    "This question has already been answered.",
-                    "Info",
-                    JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
-
-        // Build question text + options
-        Map<String, String> options = q.getOptions();
-        StringBuilder msg = new StringBuilder();
-        msg.append(q.getQuestionText()).append("\n\n");
-        msg.append("A) ").append(options.get("A")).append("\n");
-        msg.append("B) ").append(options.get("B")).append("\n");
-        msg.append("C) ").append(options.get("C")).append("\n");
-        msg.append("D) ").append(options.get("D")).append("\n");
-
-        String[] choices = {"A", "B", "C", "D"};
-        String answer = (String) JOptionPane.showInputDialog(
-                this,
-                msg.toString(),
-                "Answer Question (" + categoryName + " - " + value + ")",
-                JOptionPane.QUESTION_MESSAGE,
-                null,
-                choices,
-                "A"
-        );
-
-        if (answer == null) {
-            return;
-        }
-
-        boolean correct = controller.answerQuestion(categoryName, value, answer);
-
-        if (correct) {
-            JOptionPane.showMessageDialog(this,
-                    "Correct!",
-                    "Result",
-                    JOptionPane.INFORMATION_MESSAGE);
-        } else {
-            JOptionPane.showMessageDialog(this,
-                    "Incorrect.\nCorrect answer: " + q.getCorrectAnswer() +
-                            " → " + q.getCorrectAnswerText(),
-                    "Result",
-                    JOptionPane.INFORMATION_MESSAGE);
-        }
-
-        button.setEnabled(false);
-        refreshScores();
-
-        boolean ended = controller.checkAndEndGame();
-        if (ended || controller.isGameFinished()) {
-            onGameFinished();
-        } else {
-            statusLabel.setText("Next player: " +
-                    controller.getCurrentPlayer().getName());
-        }
+    if (q == null) {
+        JOptionPane.showMessageDialog(this,
+                "Question not found.",
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+        return;
     }
+    if (q.isAnswered()) {
+        JOptionPane.showMessageDialog(this,
+                "This question has already been answered.",
+                "Info",
+                JOptionPane.INFORMATION_MESSAGE);
+        return;
+    }
+
+    // Build question text + options
+    Map<String, String> options = q.getOptions();
+    StringBuilder msg = new StringBuilder();
+    msg.append(q.getQuestionText()).append("\n\n");
+    msg.append("A) ").append(options.get("A")).append("\n");
+    msg.append("B) ").append(options.get("B")).append("\n");
+    msg.append("C) ").append(options.get("C")).append("\n");
+    msg.append("D) ").append(options.get("D")).append("\n");
+
+    String[] choices = {"A", "B", "C", "D"};
+    String answer = (String) JOptionPane.showInputDialog(
+            this,
+            msg.toString(),
+            "Answer Question (" + categoryName + " - " + value + ")",
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            choices,
+            "A"
+    );
+
+    if (answer == null) {
+        return;
+    }
+
+    boolean correct = controller.answerQuestion(categoryName, value, answer);
+
+    if (correct) {
+        JOptionPane.showMessageDialog(this,
+                "Correct!",
+                "Result",
+                JOptionPane.INFORMATION_MESSAGE);
+    } else {
+        JOptionPane.showMessageDialog(this,
+                "Incorrect.\nCorrect answer: " + q.getCorrectAnswer() +
+                        " → " + q.getCorrectAnswerText(),
+                "Result",
+                JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    button.setEnabled(false);
+    refreshScores();
+
+    // FIX: Move to next player after each question
+    controller.nextPlayer();
+
+    boolean ended = controller.checkAndEndGame();
+    if (ended || controller.isGameFinished()) {
+        onGameFinished();
+    } else {
+        statusLabel.setText("Current player: " + controller.getCurrentPlayer().getName());
+    }
+}
 
     // =============================
     //  Scores & game end
@@ -528,41 +530,50 @@ public class MainWindow extends JFrame {
     }
 
     private void resetGame() {
-        // Process log: New Game
-        logSystem("New Game", null, null, null);
+    // Process log: New Game
+    logSystem("New Game", null, null, null);
 
-        // New controller so game state (players, questions) is fresh next time
-        this.controller = new GameController();
-        this.gameInProgress = false;
+    // Create a completely new controller to reset everything
+    this.controller = new GameController();
+    this.gameInProgress = false;
 
-        // Clear board
-        boardPanel.removeAll();
-        boardPanel.add(new JLabel("Load questions and start the game to see the board.",
-                SwingConstants.CENTER));
-
-        // Reset player fields
-        for (JTextField tf : playerNameFields) {
-            tf.setText("");
-            tf.setEnabled(true);
+    // If you're reusing the same GameData, reset all questions
+    if (loadedGameData != null) {
+        for (Category category : loadedGameData.getCategories()) {
+            for (Question question : category.getAllQuestions()) {
+                question.setAnswered(false); // Reset all questions to unanswered
+            }
         }
-
-        // Reset controls
-        startGameButton.setEnabled(loadedGameData != null);
-        endGameButton.setEnabled(false);
-        newGameButton.setEnabled(false);
-        loadButton.setEnabled(true);
-        playerCountSpinner.setEnabled(true);
-
-        // Reset status
-        statusLabel.setText("Game reset. Load questions or start again.");
-
-        // Reset scores panel
-        scorePanel.removeAll();
-        scorePanel.add(new JLabel("No players yet.", SwingConstants.CENTER));
-
-        boardPanel.revalidate();
-        boardPanel.repaint();
-        scorePanel.revalidate();
-        scorePanel.repaint();
     }
+
+    // Clear board
+    boardPanel.removeAll();
+    boardPanel.add(new JLabel("Load questions and start the game to see the board.",
+            SwingConstants.CENTER));
+
+    // Reset player fields
+    for (JTextField tf : playerNameFields) {
+        tf.setText("");
+        tf.setEnabled(true);
+    }
+
+    // Reset controls
+    startGameButton.setEnabled(loadedGameData != null);
+    endGameButton.setEnabled(false);
+    newGameButton.setEnabled(false);
+    loadButton.setEnabled(true);
+    playerCountSpinner.setEnabled(true);
+
+    // Reset status
+    statusLabel.setText("Game reset. Load questions or start again.");
+
+    // Reset scores panel
+    scorePanel.removeAll();
+    scorePanel.add(new JLabel("No players yet.", SwingConstants.CENTER));
+
+    boardPanel.revalidate();
+    boardPanel.repaint();
+    scorePanel.revalidate();
+    scorePanel.repaint();
+}
 }
