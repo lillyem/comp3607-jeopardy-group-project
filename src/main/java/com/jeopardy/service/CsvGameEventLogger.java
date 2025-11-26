@@ -13,8 +13,10 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 /**
- * Logs game events to logs/game_event_log.csv
- * in the format required by the project handout.
+ * CSV implementation of GameEventLogger that writes game events to a CSV file
+ * for process mining analysis. Formats events according to project requirements
+ * with proper timestamps and all required columns.
+ * 
  */
 
 public class CsvGameEventLogger implements GameEventLogger {
@@ -29,6 +31,11 @@ public class CsvGameEventLogger implements GameEventLogger {
     private final String caseId;
     private final Path logFile;
 
+     /**
+     * Constructs a new CSV logger for the specified game case.
+     *
+     * @param caseId Unique identifier for the game session
+     */
     public CsvGameEventLogger(String caseId) {
         this.caseId = caseId;
 
@@ -43,7 +50,7 @@ public class CsvGameEventLogger implements GameEventLogger {
         this.logFile = logsDir.resolve("game_event_log.csv");
         initializeLogFile();
     }
-
+    /** Initialises the CSV log file with header if it does not exist. */
     private void initializeLogFile() {
         // If file already exists, keep appending (don’t overwrite previous games)
         if (Files.exists(logFile)) {
@@ -84,7 +91,11 @@ public class CsvGameEventLogger implements GameEventLogger {
             System.err.println("Error logging event: " + e.getMessage());
         }
     }
-
+    /**
+     * Formats the given timestamp to the required CSV format.
+     * @param instant
+     * @return
+     */
     private String formatTimestamp(Instant instant) {
         if (instant == null) {
             return TIMESTAMP_FORMAT.format(Instant.now());
@@ -92,6 +103,11 @@ public class CsvGameEventLogger implements GameEventLogger {
         return TIMESTAMP_FORMAT.format(instant);
     }
 
+    /**
+     * Safely converts a value to string, returning empty string if null.
+     * @param value
+     * @return
+     */
     private String safe(Object value) {
         return value == null ? "" : value.toString();
     }

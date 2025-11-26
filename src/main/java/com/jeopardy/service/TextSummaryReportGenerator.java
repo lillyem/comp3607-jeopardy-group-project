@@ -10,10 +10,22 @@ import java.nio.file.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/** Generates a text summary report of the game. */
+/**
+ * Text format implementation of SummaryReportGenerator that creates
+ * human-readable game reports in plain text format. Follows the
+ * Template Method pattern for consistent report structure.
+ * 
+ */
 public class TextSummaryReportGenerator implements SummaryReportGenerator {
 
-    /** Generates and writes the summary report. */
+   /**
+     * Generates a detailed text report with game summary, player scores,
+     * turn-by-turn history, and final results including tie handling.
+     *
+     * @param controller The game controller with complete game data
+     * @return Path to the generated text report file
+     * @throws IOException if the report file cannot be written
+     */
     @Override
     public Path generate(GameController controller) throws IOException {
 

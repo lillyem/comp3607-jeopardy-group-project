@@ -22,7 +22,10 @@ import java.util.Set;
 import java.util.TreeSet;
 
 /**
- * Main Swing window for the Jeopardy game.
+ * Main Swing GUI window for the Jeopardy game application.
+ * Provides the user interface for game setup, gameplay, and results display.
+ * Implements the View in the MVC architecture pattern.
+ * 
  */
 public class MainWindow extends JFrame {
 
@@ -43,7 +46,11 @@ public class MainWindow extends JFrame {
 
     private boolean gameInProgress = false;
 
-    /** Initializes the main game window with all UI components. */
+    /**
+     * Constructs the main game window with all UI components.
+     * Initializes the game controller and sets up the user interface
+     * including game board, score panel, and control buttons.
+     */
     public MainWindow() {
         super("COMP3607 Jeopardy Game");
 
@@ -150,7 +157,11 @@ public class MainWindow extends JFrame {
     //  File loading & game setup
     // =============================
 
-    /** Opens file chooser to load question data from CSV, JSON, or XML files. */
+    /**
+     * Handles the question file loading process with format detection.
+     * Supports CSV, JSON, and XML formats via the factory pattern.
+     * Updates UI state to reflect successful loading.
+     */
     private void onLoadQuestions() {
         if (gameInProgress) {
             JOptionPane.showMessageDialog(this,
@@ -205,7 +216,11 @@ public class MainWindow extends JFrame {
         }
     }
 
-    /** Initializes and starts a new game with selected players and loaded questions. */
+   /**
+     * Starts a new game with the configured players and loaded questions.
+     * Initializes the game controller and builds the interactive game board.
+     * Enables gameplay controls and disables setup controls.
+     */
     private void onStartGame() {
         if (loadedGameData == null || loadedGameData.isEmpty()) {
             JOptionPane.showMessageDialog(this,
@@ -284,7 +299,11 @@ public class MainWindow extends JFrame {
     //  Board creation & interaction
     // =============================
 
-    /** Builds the game board with category headers and question buttons. */
+     /**
+     * Constructs the interactive game board UI with categories and questions.
+     * Organizes questions by category and value in a grid layout.
+     * Creates clickable buttons for all available questions.
+     */
     private void buildBoard() {
         boardPanel.removeAll();
 
@@ -339,7 +358,15 @@ public class MainWindow extends JFrame {
         boardPanel.repaint();
     }
 
-   /** Displays question to current player and processes their answer. */
+   /**
+     * Handles player interaction with question buttons on the game board.
+     * Displays the question, captures the answer, and processes the result.
+     * Updates scores and advances to the next player.
+     *
+     * @param categoryName The category of the selected question
+     * @param value The point value of the selected question  
+     * @param button The UI button that was clicked
+     */
    private void onQuestionClicked(String categoryName, int value, JButton button) {
     if (!GameState.IN_PROGRESS.equals(controller.getGameState().getStatus())) {
         JOptionPane.showMessageDialog(this,
@@ -426,7 +453,11 @@ public class MainWindow extends JFrame {
     //  Scores & game end
     // =============================
 
-    /** Updates the score display panel for all players. */
+    /**
+     * Updates the score display panel with current player scores.
+     * Creates visual score cards for each player with real-time updates.
+     * Highlights the current player if applicable.
+     */
     private void refreshScores() {
         scorePanel.removeAll();
 
@@ -543,7 +574,11 @@ public class MainWindow extends JFrame {
         newGameButton.setEnabled(true);
     }
 
-    /** Resets the game state and clears all UI components for a new game. */
+     /**
+     * Resets the game to initial state for a new game session.
+     * Clears all game state, resets UI components, and enables setup controls.
+     * Maintains loaded questions for quick restart.
+     */
     private void resetGame() {
     // Create a completely new controller to reset everything
     this.controller = new GameController();

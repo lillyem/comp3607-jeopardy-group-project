@@ -109,6 +109,11 @@ public class XmlGameDataLoader implements GameDataLoader {
         }
     }
 
+    /** 
+     * @param parent
+     * @param tagName
+     * @return String
+     */
     private String getTagText(Element parent, String tagName) {
         NodeList list = parent.getElementsByTagName(tagName);
         if (list.getLength() == 0) {

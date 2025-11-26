@@ -21,6 +21,9 @@ public class Game {
         this.reportGenerator = new TextSummaryReportGenerator();
     }
     
+    /** 
+     * @return GameState
+     */
     public GameState getGameState() {
         return gameState;
     }
@@ -33,6 +36,9 @@ public class Game {
         eventLogger.logEvent(event);
     }
     
+    /** 
+     * @param questions
+     */
     public void loadQuestions(List<Question> questions) {
         gameState.setQuestions(questions);
         GameEvent event = new GameEvent.Builder(caseId, "Load Questions")
@@ -41,6 +47,9 @@ public class Game {
         eventLogger.logEvent(event);
     }
     
+    /** 
+     * @param player
+     */
     public void addPlayer(Player player) {
         gameState.addPlayer(player);
         GameEvent event = new GameEvent.Builder(caseId, "Join Game")
@@ -50,6 +59,12 @@ public class Game {
         eventLogger.logEvent(event);
     }
     
+    /** 
+     * @param player
+     * @param question
+     * @param answer
+     * @return boolean
+     */
     public boolean answerQuestion(Player player, Question question, String answer) {
         boolean isCorrect = question.getCorrectAnswer().equals(answer);
         int oldScore = player.getScore();
@@ -72,6 +87,9 @@ public class Game {
         return isCorrect;
     }
     
+    /** 
+     * @return List<Player>
+     */
     public List<Player> getWinners() {
         return gameState.determineWinners();
     }
@@ -108,14 +126,23 @@ public class Game {
         }
     }
     
+    /** 
+     * @return boolean
+     */
     public boolean isTie() {
         return gameState.isTie();
     }
     
+    /** 
+     * @return String
+     */
     public String getGameResult() {
         return gameState.getGameResult();
     }
     
+    /** 
+     * @return Player
+     */
     public Player getCurrentPlayer() {
         return gameState.getCurrentPlayer();
     }

@@ -10,6 +10,9 @@ public class StandardScoringStrategy implements ScoringStrategy {
         return isCorrect ? questionValue : -questionValue;
     }
     
+    /** 
+     * @return String
+     */
     @Override
     public String getStrategyName() {
         return "Standard Scoring";

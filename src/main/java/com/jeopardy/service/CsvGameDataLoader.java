@@ -16,6 +16,11 @@ import java.util.*;
 
 public class CsvGameDataLoader implements GameDataLoader {
 
+    /** 
+     * @param path
+     * @return GameData
+     * @throws IOException
+     */
     @Override
     public GameData load(Path path) throws IOException {
         GameData gameData = new GameData();

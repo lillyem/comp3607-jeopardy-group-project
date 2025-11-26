@@ -9,11 +9,19 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Validates categories and questions before the game starts.
- * Used by CSV, JSON, and XML loaders.
+ * Utility class for validating game data integrity before game start.
+ * Implements the Template Method pattern to ensure consistent validation
+ * across all data sources and formats.
  */
 
 public class DataValidator {
+    /**
+     * Validates the entire categories structure including uniqueness
+     * and completeness checks. Throws exceptions for validation failures.
+     *
+     * @param categories List of categories to validate
+     * @throws IllegalArgumentException if validation fails
+     */
     public static void validateCategories(List<Category> categories) {
         if (categories == null || categories.isEmpty()) {
             throw new IllegalArgumentException("No categories found in file.");
@@ -30,6 +38,9 @@ public class DataValidator {
         }
     }
 
+    /** 
+     * @param c
+     */
     public static void validateCategory(Category c) {
 
         if (c.getName() == null || c.getName().isBlank()) {
@@ -58,6 +69,14 @@ public class DataValidator {
         }
     }
 
+    /**
+     * Validates an individual question for required fields and format.
+     * Ensures questions have text, four options, and a valid correct answer.
+     *
+     * @param question The question to validate
+     * @param categoryName The category name for error reporting
+     * @throws IllegalArgumentException if question validation fails
+     */
     public static void validateQuestion(Question q, String categoryName) {
         if (q.getQuestionText() == null || q.getQuestionText().isBlank()) {
             throw new IllegalArgumentException("A question in category '" + categoryName + "' has no text.");
