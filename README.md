@@ -11,7 +11,7 @@
 ## Refer to the wiki for further documentation
 
 # COMP3607 Jeopardy Game  
-A Java-based Jeopardy-style game created for the COMP3607 Software Engineering course.  
+A Java-based Jeopardy-style game created for the COMP3607 Object Oriented Programming II course.  
 The system supports multiple players, multiple file formats (CSV, JSON, XML), an interactive Swing GUI, scoring strategies, event logging, and summary report generation.
 
 ---
