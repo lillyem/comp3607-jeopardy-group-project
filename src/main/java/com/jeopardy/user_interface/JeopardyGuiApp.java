@@ -3,18 +3,18 @@ package com.jeopardy.user_interface;
 import javax.swing.SwingUtilities;
 
 /**
- * Main application entry point for the Jeopardy game.
- * Launches the Swing GUI and handles application lifecycle.
- * 
+ * Entry point for the Swing GUI version of the Jeopardy game.
+ * <p>
+ * This class is responsible for bootstrapping the UI by creating and
+ * showing the {@link MainWindow} on the Swing Event Dispatch Thread.
  */
 public class JeopardyGuiApp {
 
     /**
-     * Main method that launches the Jeopardy game application.
-     * Ensures proper Swing thread handling and application initialization.
+     * Launches the Jeopardy game GUI.
      *
-     * @param args Command line arguments (not used)
-     */    
+     * @param args command-line arguments (currently ignored)
+     */
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             MainWindow window = new MainWindow();

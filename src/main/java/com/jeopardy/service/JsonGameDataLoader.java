@@ -12,13 +12,50 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Loads Jeopardy data from a JSON file.
- * Expected structure: Array of question objects with Category, Value, Question, Options, CorrectAnswer
+ * Loads Jeopardy-style game data from a JSON file.
+ * <p>
+ * Expected structure (array of question objects):
+ * <pre>
+ * [
+ *   {
+ *     "Category": "Science",
+ *     "Value": 100,
+ *     "Question": "What is H2O?",
+ *     "Options": {
+ *       "A": "Water",
+ *       "B": "Oxygen",
+ *       "C": "Hydrogen",
+ *       "D": "Helium"
+ *     },
+ *     "CorrectAnswer": "A"
+ *   },
+ *   ...
+ * ]
+ * </pre>
+ * <p>
+ * Each object represents one fully-defined multiple-choice question.  
+ * After loading all items, the resulting categories are validated via
+ * {@link DataValidator}.
  */
 
 public class JsonGameDataLoader implements GameDataLoader {
 
-    /** Loads game data from a JSON file. */
+    /**
+     * Loads game data from a JSON file at the given path.
+     *
+     * <p>Validation performed:</p>
+     * <ul>
+     *     <li>File existence and non-empty content</li>
+     *     <li>Valid JSON structure</li>
+     *     <li>Presence and correctness of all required fields:
+     *         Category, Value, Question, Options(A–D), CorrectAnswer</li>
+     *     <li>CorrectAnswer must be one of A, B, C, or D</li>
+     * </ul>
+     *
+     * @param filePath the path to the JSON file
+     * @return populated {@link GameData} instance
+     * @throws IOException if the file is missing, malformed, or violates schema
+     */
     
     @Override
     public GameData load(Path filePath) throws IOException {
@@ -92,11 +129,17 @@ public class JsonGameDataLoader implements GameDataLoader {
         return gameData;
     }
 
-    // -------------------------
     //   Helper validation methods
-    // -------------------------
 
-    /** Gets a required string field from JSON. */
+    /**
+     * Retrieves a required String field from a JSON object.
+     *
+     * @param obj   JSON object containing the field
+     * @param field field name
+     * @param index index of the question object within the JSON array
+     * @return the trimmed string value
+     * @throws IOException if the field is missing or empty
+     */
     private String getRequiredString(JSONObject obj, String field, int index) throws IOException {
         if (!obj.has(field) || obj.isNull(field)) {
             throw new IOException("Missing field '" + field + "' at question index " + index);
@@ -108,7 +151,15 @@ public class JsonGameDataLoader implements GameDataLoader {
         return val;
     }
 
-    /** Gets a required integer field from JSON. */
+    /**
+     * Retrieves a required integer field from a JSON object.
+     *
+     * @param obj   JSON object containing the field
+     * @param field name of the field
+     * @param index index of the question object in the JSON array
+     * @return the integer value
+     * @throws IOException if missing, non-numeric, or invalid
+     */
     private int getRequiredInt(JSONObject obj, String field, int index) throws IOException {
         if (!obj.has(field) || obj.isNull(field)) {
             throw new IOException("Missing numeric field '" + field + "' at question index " + index);

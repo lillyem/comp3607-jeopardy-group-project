@@ -14,20 +14,45 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 /**
- * Main controller class that orchestrates the Jeopardy game flow.
- * Manages game state, player turns, question answering, and coordinates
- * between the UI layer and game logic.
- *  
+ * Central controller responsible for managing all gameplay operations in
+ * the Jeopardy application. This class coordinates:
+ * <ul>
+ *     <li>Game state management (players, turn order, status)</li>
+ *     <li>Loading and accessing questions and categories</li>
+ *     <li>Answer evaluation and scoring</li>
+ *     <li>Event creation and logging through {@link GameEventLogger}</li>
+ *     <li>Summary report generation</li>
+ * </ul>
+ *
+ * It serves as the primary API used by the UI layer and the integration tests.
  */
 public class GameController {
+    /** Encapsulates players, questions, and game status/turn order. */
     private GameState gameState;
+
+    /** Container holding categories and questions parsed from files. */
     private GameData gameData;
+
+    /** Local list of gameplay events used for report generation. */
     private final List<GameEvent> gameplayEvents = new ArrayList<>();
 
+    /** Logger responsible for writing gameplay events to CSV. */
     private GameEventLogger eventLogger;
+
+    /** Unique identifier for the current game session (Case ID). */
     private String caseId;
+
+    /** Generates text-based summary reports at the end of the game. */
     private final SummaryReportGenerator reportGenerator = new TextSummaryReportGenerator();
 
+    /**
+     * Constructs a new {@code GameController}:
+     * <ul>
+     *     <li>Initializes a fresh {@link GameState}</li>
+     *     <li>Generates a unique case ID based on the clock</li>
+     *     <li>Creates a CSV event logger tied to this case</li>
+     * </ul>
+     */
     public GameController() {
         this.gameState = new GameState();
 
@@ -39,59 +64,47 @@ public class GameController {
         this.eventLogger = new CsvGameEventLogger(caseId);
     }
     
-    /** 
-     * @return List<GameEvent>
-     */
+    /** @return list of recorded gameplay events */
     public List<GameEvent> getGameplayEvents() {
         return gameplayEvents;
     }
 
-    /** 
-     * @return String
-     */
+    /** @return the session's unique Case ID */
     public String getCaseId() {
         return caseId;
     }
 
-    /** 
-     * @return GameState
-     */
+    /** @return the current {@link GameState} backing the controller */
     public GameState getGameState() {
         return gameState;
     }
     
-    /** 
-     * @return List<Player>
-     */
+    /** @return list of all players in the game */
     public List<Player> getPlayers() {
         return gameState.getPlayers();
     }
     
-    /** 
-     * @return Player
-     */
+    /** @return the player whose turn it currently is */
     public Player getCurrentPlayer() {
         return gameState.getCurrentPlayer();
     }
     
-    /** 
-     * @return List<Category>
-     */
+    /** @return list of loaded categories or empty list if none loaded */
     public List<Category> getCategories() {
         return gameData != null ? gameData.getCategories() : List.of();
     }
     
-    /** 
-     * @return Object
-     */
+    /** @return reference to this controller (used in report generator) */
     public Object getGame() {
         return this;
     }
     
-    /** 
-     * @param categoryName
-     * @param value
-     * @return Question
+    /**
+     * Retrieves a question matching the given category and point value.
+     *
+     * @param categoryName the category label
+     * @param value        the question's point value
+     * @return the matching {@link Question}, or {@code null} if not found
      */
     public Question getQuestion(String categoryName, int value) {
         if (gameData == null) return null;
@@ -107,11 +120,15 @@ public class GameController {
         return null;
     }
     
-    /** 
-     * @param activity
-     * @param category
-     * @param value
-     * @param extra
+    /**
+     * Logs a system-level or UI-driven event (e.g., selecting categories,
+     * choosing players, loading files). The formatting rules implemented here
+     * are designed to match the required CSV event log specification.
+     *
+     * @param activity description of the event (e.g., "Start Game")
+     * @param category optional category affected by event
+     * @param value    optional question value
+     * @param extra    optional supplemental detail (e.g., chosen name or count)
      */
     public void systemEvent(String activity, String category, Integer value, String extra) {
         if (eventLogger == null) {
@@ -121,9 +138,7 @@ public class GameController {
         GameEvent.Builder builder = new GameEvent.Builder(caseId, activity);
 
         switch (activity) {
-        // ==========================================
         // Purely system-level events (no player)
-        // ==========================================
         case "Load File":
         case "Start Game":
         case "Generate Report":
@@ -146,10 +161,7 @@ public class GameController {
             }
             break;
 
-            // ==========================================
-            // Select Player Count
-            // Sample: ...,System,Select Player Count,...,,,2,N/A,
-            // ==========================================
+            
             case "Select Player Count":
                 builder.playerId("System");
                 if (extra != null && !extra.isBlank()) {
@@ -158,10 +170,7 @@ public class GameController {
                 builder.result("N/A");
                 break;
 
-            // ==========================================
-            // Enter Player Name
-            // Sample: ...,Alice,Enter Player Name,...,,,Alice,N/A,
-            // ==========================================
+        
             case "Enter Player Name":
                 String name = (extra != null) ? extra : "";
                 builder.playerId(name);
@@ -171,13 +180,7 @@ public class GameController {
                 builder.result("N/A");
                 break;
 
-            // ==========================================
-            // Player-driven navigation
-            // Sample:
-            //   Alice,Select Category,...,Category,,,,0
-            //   Alice,Select Question,...,Category,100,,,0
-            // Score_After_Play = current score *before* answering.
-            // ==========================================
+            
             case "Select Category":
             case "Select Question":
                 Player current = getCurrentPlayer();
@@ -197,9 +200,7 @@ public class GameController {
                 }
                 break;
 
-            // ==========================================
             // Fallback 
-            // ==========================================
             default:
                 builder.playerId("System");
                 if (category != null && !category.isBlank()) {
@@ -218,12 +219,15 @@ public class GameController {
     }
 
      /**
-     * Initializes a new game with the specified players and question data.
-     * Sets up the game state and prepares for gameplay.
+     * Initializes a new game session by:
+     * <ul>
+     *     <li>Storing the provided {@link GameData}</li>
+     *     <li>Setting status to {@code IN_PROGRESS}</li>
+     *     <li>Creating a {@link Player} object for each given name</li>
+     * </ul>
      *
-     * @param playerNames List of player names to participate in the game
-     * @param gameData The loaded game data containing categories and questions
-     * @throws IllegalArgumentException if playerNames is empty or gameData is invalid
+     * @param names    list of player display names
+     * @param gameData structured category/question data
      */
     public void initializeGame(List<String> names, GameData gameData) {
         this.gameData = gameData;
@@ -235,12 +239,16 @@ public class GameController {
         }
     }
     
+    /** Forces the game to end immediately by setting status to FINISHED. */
     public void forceEndGame() {
         gameState.setStatus(GameState.FINISHED);
     }
     
-    /** 
-     * @return boolean
+    /**
+     * Checks whether all questions across all categories have been answered.
+     * If so, the game is marked as finished.
+     *
+     * @return {@code true} if all questions are answered
      */
     public boolean checkAndEndGame() {
         boolean allAnswered = true;
@@ -260,22 +268,26 @@ public class GameController {
         return allAnswered;
     }
     
-    /** 
-     * @return boolean
-     */
+    /** @return {@code true} if the game state is FINISHED */
     public boolean isGameFinished() {
         return GameState.FINISHED.equals(gameState.getStatus());
     }
     
     /**
-     * Processes a player's answer to a question and updates scores accordingly.
-     * Logs the attempt for process mining and advances to the next player.
+     * Processes a player's attempt to answer a question.
+     * <p>
+     * Performs:
+     * <ul>
+     *     <li>Correct/incorrect scoring</li>
+     *     <li>Marking the question as answered</li>
+     *     <li>Logging an "Answer Question" event</li>
+     *     <li>Storing the event for report building</li>
+     * </ul>
      *
-     * @param categoryName The category of the question being answered
-     * @param value The point value of the question
-     * @param answer The player's answer (A, B, C, or D)
-     * @return true if the answer was correct, false otherwise
-     * @throws IllegalStateException if the game is not in progress
+     * @param categoryName category containing the question
+     * @param value        point value of question
+     * @param answer       player's chosen answer (A/B/C/D)
+     * @return true if the answer is correct
      */
     public boolean answerQuestion(String categoryName, int value, String answer) {
         Question question = getQuestion(categoryName, value);
@@ -324,53 +336,38 @@ public class GameController {
         return false;
     }
 
-     /**
-     * Generates a comprehensive summary report of the completed game.
-     * Includes player scores, gameplay history, and final results.
+    /**
+     * Generates a text-based summary report using the configured
+     * {@link SummaryReportGenerator}.
      *
-     * @return Path to the generated report file
-     * @throws IOException if report file cannot be created
+     * @return path to the resulting report file
+     * @throws IOException if writing the report fails
      */
     public Path generateSummaryReport() throws IOException {
         return reportGenerator.generate(this);
     }
 
-    
-    /**
-     * Determines all winners of the game, handling tie scenarios.
-     * Returns multiple players if they have the same highest score.
-     *
-     * @return List of players with the highest score, empty list if no winners
-     */
+    /** @return list of all players tied for highest score */
     public List<Player> getWinners() {
         return gameState.determineWinners();
     }
     
-    /** 
-     * @return boolean
-     */
+    /** @return true if two or more players share the top score */
     public boolean isTie() {
         return gameState.isTie();
     }
     
-    /** 
-     * @return String
-     */
+    /** @return textual summary of winning state or tie */
     public String getGameResult() {
         return gameState.getGameResult();
     }
     
-    /** 
-     * @return Player
-     */
+    /** @return the highest-scoring player, or null if none */
     public Player getWinner() {
         return gameState.getWinner();
     }
 
-     /**
-     * Advances the game to the next player's turn.
-     * Implements circular rotation through the player list.
-     */
+    /** Advances to the next player's turn. */
     public void nextPlayer() {
     gameState.nextPlayer();
 }

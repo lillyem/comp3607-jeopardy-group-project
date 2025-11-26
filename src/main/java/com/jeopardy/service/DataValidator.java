@@ -9,18 +9,32 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Utility class for validating game data integrity before game start.
- * Implements the Template Method pattern to ensure consistent validation
- * across all data sources and formats.
+ * Utility class for validating Jeopardy game data before use.
+ * <p>
+ * This validator is typically used by CSV, JSON and XML loaders to ensure that:
+ * <ul>
+ *     <li>At least one category exists</li>
+ *     <li>Category names are present and unique</li>
+ *     <li>Each category contains at least one question</li>
+ *     <li>Question values are positive and not repeated within a category</li>
+ *     <li>Each question has valid text, options A–D, and a valid correct answer</li>
+ * </ul>
  */
 
 public class DataValidator {
-    /**
-     * Validates the entire categories structure including uniqueness
-     * and completeness checks. Throws exceptions for validation failures.
+
+     /**
+     * Validates a list of categories and their contained questions.
+     * <p>
+     * Checks that:
+     * <ul>
+     *     <li>The list is not {@code null} or empty</li>
+     *     <li>Each category passes {@link #validateCategory(Category)}</li>
+     *     <li>No two categories share the same name (case-insensitive)</li>
+     * </ul>
      *
-     * @param categories List of categories to validate
-     * @throws IllegalArgumentException if validation fails
+     * @param categories the list of categories to validate
+     * @throws IllegalArgumentException if validation fails for any reason
      */
     public static void validateCategories(List<Category> categories) {
         if (categories == null || categories.isEmpty()) {
@@ -38,8 +52,19 @@ public class DataValidator {
         }
     }
 
-    /** 
-     * @param c
+    /**
+     * Validates a single category and all of its questions.
+     * <p>
+     * Checks that:
+     * <ul>
+     *     <li>The category name is present and non-blank</li>
+     *     <li>The category contains at least one question</li>
+     *     <li>Each question passes {@link #validateQuestion(Question, String)}</li>
+     *     <li>No two questions share the same point value within this category</li>
+     * </ul>
+     *
+     * @param c the category to validate
+     * @throws IllegalArgumentException if any validation rule is violated
      */
     public static void validateCategory(Category c) {
 
@@ -70,12 +95,20 @@ public class DataValidator {
     }
 
     /**
-     * Validates an individual question for required fields and format.
-     * Ensures questions have text, four options, and a valid correct answer.
+     * Validates an individual question within a specific category.
+     * <p>
+     * Checks that:
+     * <ul>
+     *     <li>Question text is present and non-blank</li>
+     *     <li>Options map is non-null and contains keys A, B, C and D</li>
+     *     <li>Each option A–D has non-empty text</li>
+     *     <li>The correct answer is one of A, B, C or D</li>
+     *     <li>The question value is positive</li>
+     * </ul>
      *
-     * @param question The question to validate
-     * @param categoryName The category name for error reporting
-     * @throws IllegalArgumentException if question validation fails
+     * @param q            the question to validate
+     * @param categoryName the name of the category this question belongs to
+     * @throws IllegalArgumentException if any validation rule is violated
      */
     public static void validateQuestion(Question q, String categoryName) {
         if (q.getQuestionText() == null || q.getQuestionText().isBlank()) {

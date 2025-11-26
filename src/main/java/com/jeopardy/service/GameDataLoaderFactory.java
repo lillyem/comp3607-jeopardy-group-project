@@ -1,25 +1,24 @@
 package com.jeopardy.service;
 
-import java.io.IOException;
-
 /**
-     * Loads and parses game questions from the specified file path.
-     * Validates the data structure and returns a GameData object.
-     *
-     * @param filePath Path to the question file
-     * @return GameData containing categories and questions
-     * @throws IOException if the file cannot be read
-     * @throws IllegalArgumentException if file format is invalid or data validation fails
-     */
+ * Factory for creating the appropriate {@link GameDataLoader} implementation
+ * based on a game data file's extension.
+ * <p>
+ * Supported formats:
+ * <ul>
+ *     <li><code>.csv</code> → {@link CsvGameDataLoader}</li>
+ *     <li><code>.json</code> → {@link JsonGameDataLoader}</li>
+ *     <li><code>.xml</code> → {@link XmlGameDataLoader}</li>
+ * </ul>
+ */
 public class GameDataLoaderFactory {
 
-   /**
-     * Creates a GameDataLoader implementation based on the file extension.
-     * Supports CSV, JSON, and XML formats.
+    /**
+     * Creates a {@link GameDataLoader} suitable for the given file name.
      *
-     * @param filePath Path to the question file
-     * @return Appropriate GameDataLoader implementation for the file format
-     * @throws IllegalArgumentException if file format is not supported
+     * @param filename the name of the data file (used to inspect its extension)
+     * @return a concrete {@link GameDataLoader} instance
+     * @throws IllegalArgumentException if the file type is not supported
      */
     public static GameDataLoader createLoader(String filename) {
         String lower = filename.toLowerCase();

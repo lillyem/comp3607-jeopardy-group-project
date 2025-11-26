@@ -14,13 +14,45 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Loads Jeopardy questions from an XML file.
- * Expected structure: Root element with QuestionItem children
+ * Loads Jeopardy-style question data from an XML file.
+ * <p>
+ * Expected XML structure:
+ * <pre>
+ * &lt;JeopardyQuestions&gt;
+ *     &lt;QuestionItem&gt;
+ *         &lt;Category&gt;Science&lt;/Category&gt;
+ *         &lt;Value&gt;100&lt;/Value&gt;
+ *         &lt;QuestionText&gt;What is H2O?&lt;/QuestionText&gt;
+ *         &lt;Options&gt;
+ *             &lt;OptionA&gt;Water&lt;/OptionA&gt;
+ *             &lt;OptionB&gt;Oxygen&lt;/OptionB&gt;
+ *             &lt;OptionC&gt;Hydrogen&lt;/OptionC&gt;
+ *             &lt;OptionD&gt;Helium&lt;/OptionD&gt;
+ *         &lt;/Options&gt;
+ *         &lt;CorrectAnswer&gt;A&lt;/CorrectAnswer&gt;
+ *     &lt;/QuestionItem&gt;
+ * &lt;/JeopardyQuestions&gt;
+ * </pre>
+ * <p>
+ * Each {@code QuestionItem} is converted into a {@link Question}
+ * and inserted into the appropriate {@link Category} within a {@link GameData}.
  */
 
 public class XmlGameDataLoader implements GameDataLoader {
 
-    /** Loads game data from an XML file. */
+    /**
+     * Parses an XML file from the specified path and converts it into a populated
+     * {@link GameData} object. Validation includes checking for:
+     * <ul>
+     *     <li>Presence of required tags (Category, Value, QuestionText, Options, CorrectAnswer)</li>
+     *     <li>Valid numeric question values</li>
+     *     <li>Presence of all four multiple-choice options (A–D)</li>
+     * </ul>
+     *
+     * @param path the path to the XML file to load
+     * @return a fully populated {@link GameData} object
+     * @throws IOException if the file cannot be parsed or required fields are missing
+     */
     @Override
     public GameData load(Path path) throws IOException {
         GameData gameData = new GameData();
@@ -109,10 +141,13 @@ public class XmlGameDataLoader implements GameDataLoader {
         }
     }
 
-    /** 
-     * @param parent
-     * @param tagName
-     * @return String
+    /**
+     * Utility method for retrieving the text content of the first occurrence
+     * of a given tag inside a parent element.
+     *
+     * @param parent  the element containing the tag
+     * @param tagName the name of the tag to read
+     * @return the trimmed text inside the tag, or {@code null} if missing
      */
     private String getTagText(Element parent, String tagName) {
         NodeList list = parent.getElementsByTagName(tagName);

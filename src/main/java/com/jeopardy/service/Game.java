@@ -6,14 +6,41 @@ import com.jeopardy.model.Question;
 import com.jeopardy.model.GameEvent;
 import java.util.List;
 
-/** Manages game logic and event logging. */
+/**
+ * High-level game controller that manages:
+ * <ul>
+ *     <li>Game state (players, questions, status)</li>
+ *     <li>Event logging via {@link GameEventLogger}</li>
+ *     <li>Summary report generation</li>
+ * </ul>
+ *
+ * This class provides a simple wrapper around {@link GameState} and ties
+ * together core actions such as starting the game, answering questions,
+ * determining winners, and ending the session.
+ */
 public class Game {
+
+    /** Holds players, questions, turn order, and game status. */
     private GameState gameState;
+
+    /** Logs all gameplay events for analysis. */
     private GameEventLogger eventLogger;
+
+    /** Generates a summary report when the game ends. */
     private SummaryReportGenerator reportGenerator;
+
+    /** Unique identifier (Case ID) used for all logged events. */
     private String caseId;
     
-    /** Creates a new Game instance. */
+    /**
+     * Creates a new game instance with:
+     * <ul>
+     *     <li>Fresh {@link GameState}</li>
+     *     <li>A unique case ID based on system time</li>
+     *     <li>CSV event logger</li>
+     *     <li>Text-based summary report generator</li>
+     * </ul>
+     */
     public Game() {
         this.gameState = new GameState();
         this.caseId = "GAME" + System.currentTimeMillis();
@@ -21,13 +48,15 @@ public class Game {
         this.reportGenerator = new TextSummaryReportGenerator();
     }
     
-    /** 
-     * @return GameState
-     */
+    /** @return the active {@link GameState} instance for this session. */
     public GameState getGameState() {
         return gameState;
     }
     
+    /**
+     * Begins the game by setting state to {@code IN_PROGRESS}
+     * and logging a "Start Game" event.
+     */
     public void startGame() {
         gameState.setStatus(GameState.IN_PROGRESS);
         GameEvent event = new GameEvent.Builder(caseId, "Start Game")
@@ -36,8 +65,10 @@ public class Game {
         eventLogger.logEvent(event);
     }
     
-    /** 
-     * @param questions
+    /**
+     * Loads all questions into the {@link GameState} and logs the action.
+     *
+     * @param questions list of question objects to attach to the game
      */
     public void loadQuestions(List<Question> questions) {
         gameState.setQuestions(questions);
@@ -47,8 +78,10 @@ public class Game {
         eventLogger.logEvent(event);
     }
     
-    /** 
-     * @param player
+    /**
+     * Adds a player to the game and logs a "Join Game" event.
+     *
+     * @param player the player joining the session
      */
     public void addPlayer(Player player) {
         gameState.addPlayer(player);
@@ -59,11 +92,21 @@ public class Game {
         eventLogger.logEvent(event);
     }
     
-    /** 
-     * @param player
-     * @param question
-     * @param answer
-     * @return boolean
+    /**
+     * Processes a player's answer to a question.
+     * <p>
+     * Updates:
+     * <ul>
+     *     <li>Player score (only if correct)</li>
+     *     <li>Marked state of the question</li>
+     * </ul>
+     * Also logs an "Answer Question" event including:
+     * category, value, selected answer, result, and updated score.
+     *
+     * @param player the player answering
+     * @param question the question being answered
+     * @param answer the player's chosen option (A/B/C/D)
+     * @return {@code true} if the answer was correct
      */
     public boolean answerQuestion(Player player, Question question, String answer) {
         boolean isCorrect = question.getCorrectAnswer().equals(answer);
@@ -87,13 +130,24 @@ public class Game {
         return isCorrect;
     }
     
-    /** 
-     * @return List<Player>
+    /**
+     * Computes and returns the list of players with the highest score.
+     * Supports tie scenarios.
+     *
+     * @return list of winner(s)
      */
     public List<Player> getWinners() {
         return gameState.determineWinners();
     }
     
+    /**
+     * Ends the game by:
+     * <ul>
+     *     <li>Setting status to {@code FINISHED}</li>
+     *     <li>Logging a "Game End" event with the final outcome</li>
+     *     <li>Generating a summary report</li>
+     * </ul>
+     */
     public void endGame() {
         gameState.setStatus(GameState.FINISHED);
         
@@ -118,6 +172,13 @@ public class Game {
         generateReport();
     }
     
+    /**
+     * Generates the post-game summary report.
+     * <p>
+     * NOTE: This currently constructs a new {@link GameController},
+     * which may or may not reflect the intended final design.
+     * Exceptions are printed to stderr.
+     */
     private void generateReport() {
         try {
             reportGenerator.generate(new GameController());
@@ -126,27 +187,22 @@ public class Game {
         }
     }
     
-    /** 
-     * @return boolean
-     */
+    /** @return true if the top score is shared by two or more players. */
     public boolean isTie() {
         return gameState.isTie();
     }
     
-    /** 
-     * @return String
-     */
+    /** @return a formatted message summarizing the winning state or tie. */
     public String getGameResult() {
         return gameState.getGameResult();
     }
     
-    /** 
-     * @return Player
-     */
+     /** @return the player whose turn it currently is. */
     public Player getCurrentPlayer() {
         return gameState.getCurrentPlayer();
     }
     
+    /** Advances the turn to the next player in the rotation. */
     public void nextPlayer() {
         gameState.nextPlayer();
     }

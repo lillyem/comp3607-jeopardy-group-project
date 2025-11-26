@@ -1,17 +1,32 @@
 package com.jeopardy.service;
 
-/** Standard Jeopardy scoring: +value for correct, -value for incorrect. */
+/**
+ * Default Jeopardy-style scoring strategy:
+ * <ul>
+ *     <li>Correct answer → <strong>+value</strong></li>
+ *     <li>Incorrect answer → <strong>-value</strong></li>
+ * </ul>
+ * This strategy is used by default in {@link ScoreManager}.
+ */
 
 public class StandardScoringStrategy implements ScoringStrategy {
     
-    /** Calculates standard Jeopardy scoring. */
+    /**
+     * Applies the standard Jeopardy scoring rule.
+     *
+     * @param questionValue the base point value of the question
+     * @param isCorrect     whether the player's answer was correct
+     * @return +value if correct, -value if incorrect
+     */
     @Override
     public int calculateScore(int questionValue, boolean isCorrect) {
         return isCorrect ? questionValue : -questionValue;
     }
     
-    /** 
-     * @return String
+    /**
+     * Returns the display name of this scoring strategy.
+     *
+     * @return the string "Standard Scoring"
      */
     @Override
     public String getStrategyName() {

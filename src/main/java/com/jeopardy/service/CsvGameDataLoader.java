@@ -10,16 +10,31 @@ import java.nio.file.Path;
 import java.util.*;
 
 /**
- * Loads Jeopardy questions from a CSV file.
- * Expected header: Category,Value,Question,OptionA,OptionB,OptionC,OptionD,CorrectAnswer
+ * Loads Jeopardy-style game data from a CSV file.
+ * <p>
+ * Expected header (8 columns):
+ * <pre>
+ * Category,Value,Question,OptionA,OptionB,OptionC,OptionD,CorrectAnswer
+ * </pre>
+ *
+ * Each subsequent row is parsed into a {@link Question} and added to a
+ * {@link GameData} instance. The loader:
+ * <ul>
+ *     <li>Ignores blank lines</li>
+ *     <li>Performs column-count validation</li>
+ *     <li>Parses values and trims whitespace</li>
+ *     <li>Accepts quoted fields and escaped quotes</li>
+ * </ul>
  */
 
 public class CsvGameDataLoader implements GameDataLoader {
 
-    /** 
-     * @param path
-     * @return GameData
-     * @throws IOException
+     /**
+     * Loads game data from the specified CSV file.
+     *
+     * @param path the path to the CSV file
+     * @return a populated {@link GameData} instance containing all parsed categories and questions
+     * @throws IOException if the file cannot be read or contains malformed rows
      */
     @Override
     public GameData load(Path path) throws IOException {
@@ -51,9 +66,7 @@ public class CsvGameDataLoader implements GameDataLoader {
                 options.put("C", optionC);
                 options.put("D", optionD);
 
-                // This matches your Question constructor:
-                // Question(String category, int value, String questionText,
-                //          Map<String,String> options, String correctAnswer)
+                // This matches your Question constructor
                 Question q = new Question(category, value, questionText, options, correctAnswer);
 
                 gameData.addQuestion(q);
@@ -64,9 +77,18 @@ public class CsvGameDataLoader implements GameDataLoader {
     }
 
     /**
-     * Very small CSV parser that:
-     * - Respects double quotes
-     * - Splits on commas only when NOT inside quotes
+     * Parses a CSV line into individual fields.
+     * <p>
+     * This implementation:
+     * <ul>
+     *     <li>Handles quoted fields</li>
+     *     <li>Handles escaped double quotes ("")</li>
+     *     <li>Splits only on commas that are not inside quotes</li>
+     *     <li>Trims outer quotes from each field</li>
+     * </ul>
+     *
+     * @param line a single CSV line
+     * @return a list of parsed values in order
      */
 
     private List<String> parseCsvLine(String line) {

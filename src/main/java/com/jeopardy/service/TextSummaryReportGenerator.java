@@ -11,25 +11,44 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Text format implementation of SummaryReportGenerator that creates
- * human-readable game reports in plain text format. Follows the
- * Template Method pattern for consistent report structure.
- * 
+ * Generates a human-readable text summary report of a completed game.
+ * <p>
+ * The report is written to <code>report/summary_report.txt</code> and includes:
+ * <ul>
+ *     <li>Case ID</li>
+ *     <li>Player list</li>
+ *     <li>Turn-by-turn gameplay summary</li>
+ *     <li>Final scores</li>
+ *     <li>Tie information (if applicable)</li>
+ * </ul>
+ * <p>
+ * This implementation relies on the {@link GameController} to provide:
+ * <ul>
+ *     <li>Recorded {@link GameEvent} objects for each turn</li>
+ *     <li>Player states and final scores</li>
+ * </ul>
  */
 public class TextSummaryReportGenerator implements SummaryReportGenerator {
 
-   /**
-     * Generates a detailed text report with game summary, player scores,
-     * turn-by-turn history, and final results including tie handling.
+    /**
+     * Generates a textual summary report for the game.
+     * <p>
+     * The method:
+     * <ol>
+     *     <li>Ensures the <code>report/</code> directory exists</li>
+     *     <li>Creates or overwrites <code>summary_report.txt</code></li>
+     *     <li>Writes metadata including Case ID and player list</li>
+     *     <li>Iterates through all logged {@link GameEvent} turns</li>
+     *     <li>Calculates and prints final scores and tie information</li>
+     * </ol>
      *
-     * @param controller The game controller with complete game data
-     * @return Path to the generated text report file
-     * @throws IOException if the report file cannot be written
+     * @param controller the game controller that contains events, players, and metadata
+     * @return the path to <code>summary_report.txt</code>
+     * @throws IOException if the file cannot be created or written
      */
     @Override
     public Path generate(GameController controller) throws IOException {
 
-        // Ensure report directory exists
         Path reportDir = Paths.get("report");
         if (!Files.exists(reportDir)) {
             Files.createDirectories(reportDir);

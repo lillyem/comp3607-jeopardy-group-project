@@ -4,20 +4,24 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 /**
- * Strategy interface for generating game summary reports in various formats.
- * Implementations provide format-specific reporting while maintaining
- * consistent content structure.
- * 
+ * Interface for components that generate a summary report
+ * for a completed or in-progress game.
+ * <p>
+ * Implementations can decide:
+ * <ul>
+ *     <li>Output format (e.g. plain text, HTML, PDF)</li>
+ *     <li>Where the report is written to disk</li>
+ *     <li>What details from {@link GameController} are included</li>
+ * </ul>
  */
 public interface SummaryReportGenerator {
 
     /**
-     * Generates a comprehensive summary report for the completed game.
-     * Includes player information, gameplay history, and final results.
+     * Generates a report describing the game managed by the given controller.
      *
-     * @param controller The game controller containing game state and results
-     * @return Path to the generated report file
-     * @throws IOException if report file cannot be created
+     * @param controller the {@link GameController} from which to pull game data
+     * @return the {@link Path} to the generated report file
+     * @throws IOException if the report cannot be written
      */
     Path generate(GameController controller) throws IOException;
 }
