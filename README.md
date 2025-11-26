@@ -44,5 +44,5 @@ docs/                                        # Generated Javadoc API (for GitHub
 
 ## Acknowledgements
 
-- Created for the COMP3607 Software Engineering course.
+- Created for the COMP3607 Object Oriented Programming II course.
 - Built with Java, Maven, and Swing.
